@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32611.2
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Lmhm.Weather.ImageGen", "src\Lmhm.Weather.ImageGen\Lmhm.Weather.ImageGen.fsproj", "{EBA2B6B3-CA3B-4BE0-A24C-C1863A0F34FA}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Lmhm.Weather.ImageGen.Test", "test\Lmhm.Weather.ImageGen.Test\Lmhm.Weather.ImageGen.Test.fsproj", "{29A48B6C-A3F1-4C6B-8FC8-44E4FA9AB510}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EBA2B6B3-CA3B-4BE0-A24C-C1863A0F34FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBA2B6B3-CA3B-4BE0-A24C-C1863A0F34FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBA2B6B3-CA3B-4BE0-A24C-C1863A0F34FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBA2B6B3-CA3B-4BE0-A24C-C1863A0F34FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29A48B6C-A3F1-4C6B-8FC8-44E4FA9AB510}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29A48B6C-A3F1-4C6B-8FC8-44E4FA9AB510}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29A48B6C-A3F1-4C6B-8FC8-44E4FA9AB510}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29A48B6C-A3F1-4C6B-8FC8-44E4FA9AB510}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ADE59C4E-7A04-4871-B0BC-B3AA664DCB24}
+	EndGlobalSection
+EndGlobal
