@@ -46,8 +46,9 @@ type TimedService(
     interface IHostedService with
         member this.StartAsync(cancellationToken: CancellationToken) = 
             logger.Information("Starting Service:" + name)
-            let due = 60 - DateTime.Now.Second + settings.StartSecond
-            timer.Change(due * 1000, settings.Period) |> ignore
+            //let due = 60 - DateTime.Now.Second + settings.StartSecond
+            //timer.Change(due * 1000, settings.Period) |> ignore
+            timer.Change(0, settings.Period) |> ignore
             Task.CompletedTask
 
         member this.StopAsync(cancellationToken: CancellationToken) = 
@@ -59,7 +60,7 @@ type TimedService(
         member this.Dispose() = timer.Dispose()
 
 type MonthService(logger: ILogger, settings: Settings) = 
-    inherit TimedService(logger, "Month", settings, Month.run)
+    inherit TimedService(logger, "Day", settings, Day.run)
 
 type AverageTempService(logger: ILogger, settings: Settings) =
     inherit TimedService(logger, "AverageTemp", settings, AverageTemp.run)
@@ -76,7 +77,7 @@ let averageTempService (cfg: IConfiguration) (sp: IServiceProvider) =
 
 let addServices (ctx: HostBuilderContext) (svc: IServiceCollection) =
     svc.AddHostedService(monthService ctx.Configuration)
-       .AddHostedService(averageTempService ctx.Configuration)
+       //.AddHostedService(averageTempService ctx.Configuration)
     |> ignore
 
 let serilogConfig (ctx: HostBuilderContext) (cfg: LoggerConfiguration) =

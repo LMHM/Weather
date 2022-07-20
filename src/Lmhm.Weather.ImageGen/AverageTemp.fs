@@ -1,7 +1,7 @@
 ﻿module Lmhm.Weather.ImageGen.AverageTemp
 
 open System
-open Lmhm.Weather.ImageGen.Physics
+open Lmhm.Weather.ImageGen.Input
 
 type Data =
   { Sum: float<degC>

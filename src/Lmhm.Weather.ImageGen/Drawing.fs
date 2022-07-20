@@ -18,6 +18,11 @@ let saveImage (filePath: string) (image: Image) =
     image.SaveAsPng(filePath)
     image.Dispose()
 
-let drawText (text: string) (color: Color) (x: int) (y: int) (image: Image) =
+let drawText (text: string) (color: Color) (x: int, y: int) (image: Image) =
     image.Mutate(fun ctx -> ctx.DrawText(text, font, color, PointF(float32 x, float32 y)) |> ignore)
+    image
+
+let drawLine (pen: Pen) (x: int, y: int) (x1: int, y1: int) (image: Image) =
+    let points = [| PointF(float32 x, float32 y); PointF(float32 x1, float32 y1) |]
+    image.Mutate(fun ctx -> ctx.DrawLines(pen, points) |> ignore)
     image

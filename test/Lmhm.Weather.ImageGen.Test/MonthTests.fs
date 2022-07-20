@@ -3,7 +3,7 @@ module Month.Tests
 open System
 open FsUnit.Xunit
 open Xunit
-open Lmhm.Weather.ImageGen.Physics
+open Lmhm.Weather.ImageGen.Input
 open Lmhm.Weather.ImageGen.Month
 
 [<Fact>]

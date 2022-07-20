@@ -6,13 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="weather_template.png" />
     <EmbeddedResource Include="20dag_template.png" />
     <EmbeddedResource Include="consola.ttf" />
   </ItemGroup>
   
   <ItemGroup>
-    <Compile Include="Physics.fs" />
+    <Compile Include="Input.fs" />
     <Compile Include="Drawing.fs" />
+    <Compile Include="Day.fs" />
     <Compile Include="AverageTemp.fs" />
     <Compile Include="Month.fs" />
     <Compile Include="Program.fs" />

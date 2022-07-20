@@ -4,7 +4,7 @@ open System
 open System.IO
 open FsUnit.Xunit
 open Xunit
-open Lmhm.Weather.ImageGen.Physics
+open Lmhm.Weather.ImageGen.Input
 open Lmhm.Weather.ImageGen.AverageTemp
 
 [<Fact>]
