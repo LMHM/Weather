@@ -6,6 +6,10 @@ open SixLabors.ImageSharp
 open SixLabors.ImageSharp.Processing
 open SixLabors.ImageSharp.Drawing.Processing
 
+[<Measure>] type px // Pixels
+
+type Point = float<px> * float<px>
+
 let font =
     use fontStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Lmhm.Weather.ImageGen.consola.ttf")
     FontCollection().Add(fontStream).CreateFont(14.0f, FontStyle.Regular)
@@ -18,11 +22,16 @@ let saveImage (filePath: string) (image: Image) =
     image.SaveAsPng(filePath)
     image.Dispose()
 
-let drawText (text: string) (color: Color) (x: int, y: int) (image: Image) =
-    image.Mutate(fun ctx -> ctx.DrawText(text, font, color, PointF(float32 x, float32 y)) |> ignore)
+let drawText (text: string) (color: Color) (point: Point) (image: Image) =
+    image.Mutate(fun ctx -> ctx.DrawText(text, font, color, PointF(fst point |> float32, snd point |> float32)) |> ignore)
     image
 
-let drawLine (pen: Pen) (x: int, y: int) (x1: int, y1: int) (image: Image) =
-    let points = [| PointF(float32 x, float32 y); PointF(float32 x1, float32 y1) |]
+let drawLine (pen: Pen) (start: Point) (stop: Point) (image: Image) =
+    let points = [|
+        PointF(fst start |> float32, snd start |> float32)
+        PointF(fst stop |> float32, snd stop |> float32) |]
     image.Mutate(fun ctx -> ctx.DrawLines(pen, points) |> ignore)
     image
+
+let drawPoint (pen : Pen) (point : Point) (image : Image) =
+    drawLine pen point point image

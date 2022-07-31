@@ -74,11 +74,34 @@ module private Datafiles =
           Pulses = float values[27] |> limit<p> 0 1000
           Visibility = ((float values[28]) + (float values[29]) / 2.0) |> limit<km> 0 1000 }
 
+    let toSensorData2 (date: DateOnly) (line: string) =
+        let values = line.Split(' ' , StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
+        { Timestamp = DateTime(date.Year, date.Month, date.Day, int values[0], int values[1], 0)
+          WindSpeed = float values[2] |> limit<m/s> 0 100
+          WindDirection = float values[3] |> limit<deg> 0 360
+          WindSpeedMax = float values[4] |> limit<m/s> 0 100
+          WindHistoryMaxSpeed = None
+          WindHistoryMinSpeed = None
+          WindHistoryMaxDirection = None
+          WindHistoryMinDirection = None
+          AirPressureSeaLevel = float values[5] |> limit<hPa> 500 2000
+          AirPressureChange = float values[6] |> limit<hPa> -1000 1000
+          RelativeHumidity = float values[7] |> limit<percent> 0 100
+          TemperatureAir = float values[8] |> limit<degC> -100 100
+          TemperatureGround = None
+          DewPoint  = float values[9] |> limit<degC> -100 100
+          ShortWave = float values[10] |> limit<W/m^2> 0 1000
+          LongWave = float values[11] |> limit<W/m^2> 0 1000
+          Precipitation = None
+          Pulses = float values[12] |> limit<p> 0 1000
+          Visibility = ((float values[13]) + (float values[14]) / 2.0) |> limit<km> 0 1000 }
+
+
     let readDay path date =
         let fileName = filePath path "MM%s.TXT" date
         if File.Exists(fileName) then
             File.ReadAllLines(fileName)
-            |> Array.map (toSensorData date)
+            |> Array.map (toSensorData2 date)
             |> Array.toList
         else
             List.Empty

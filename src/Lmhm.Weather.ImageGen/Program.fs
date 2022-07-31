@@ -28,56 +28,38 @@ type Settings(
 
 type TimedService(
     logger: ILogger,
-    name: string,
-    settings: Settings,
-    func: string -> string -> unit) =
+    settings: Settings) =
 
     let timer =
         new Timer(fun obj -> 
-            logger.Information("Running " + name)
+            logger.Information("Running image generation")
             try
                 try
-                    func settings.InputPath settings.OutputPath
+                    Day.run settings.InputPath settings.OutputPath
                 with
-                | ex -> logger.Error(ex, "Failed to run " + name)
+                | ex -> logger.Error(ex, "Failed to run image generation")
             finally
-                logger.Information("Completed " + name))
+                logger.Information("Completed image generation"))
 
     interface IHostedService with
         member this.StartAsync(cancellationToken: CancellationToken) = 
-            logger.Information("Starting Service:" + name)
+            logger.Information("Starting Timer")
             //let due = 60 - DateTime.Now.Second + settings.StartSecond
             //timer.Change(due * 1000, settings.Period) |> ignore
-            timer.Change(0, settings.Period) |> ignore
+            timer.Change(0, settings.Period * 1000) |> ignore
             Task.CompletedTask
 
         member this.StopAsync(cancellationToken: CancellationToken) = 
-            logger.Information("Stopping Service:" + name)
+            logger.Information("Stopping Timer")
             timer.Change(Timeout.Infinite, 0) |> ignore
             Task.CompletedTask
 
     interface IDisposable with
         member this.Dispose() = timer.Dispose()
 
-type MonthService(logger: ILogger, settings: Settings) = 
-    inherit TimedService(logger, "Day", settings, Day.run)
-
-type AverageTempService(logger: ILogger, settings: Settings) =
-    inherit TimedService(logger, "AverageTemp", settings, AverageTemp.run)
-
-let monthService (cfg: IConfiguration) (sp: IServiceProvider) =
-    new MonthService(
-        sp.GetRequiredService<ILogger>(),
-        cfg.GetSection("Month").Get<Settings>())
-
-let averageTempService (cfg: IConfiguration) (sp: IServiceProvider) =
-    new AverageTempService(
-        sp.GetRequiredService<ILogger>(),
-        cfg.GetSection("AverageTemp").Get<Settings>())
-
 let addServices (ctx: HostBuilderContext) (svc: IServiceCollection) =
-    svc.AddHostedService(monthService ctx.Configuration)
-       //.AddHostedService(averageTempService ctx.Configuration)
+    svc.AddSingleton(ctx.Configuration.GetSection("Settings").Get<Settings>())
+       .AddHostedService<TimedService>()
     |> ignore
 
 let serilogConfig (ctx: HostBuilderContext) (cfg: LoggerConfiguration) =
