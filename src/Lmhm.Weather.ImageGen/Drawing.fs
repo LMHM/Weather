@@ -28,8 +28,8 @@ let drawText (text: string) (color: Color) (point: Point) (image: Image) =
 
 let drawLine (pen: Pen) (start: Point) (stop: Point) (image: Image) =
     let points = [|
-        PointF(fst start |> float32, snd start |> float32)
-        PointF(fst stop |> float32, snd stop |> float32) |]
+        PointF(fst start |> float32 |> round, snd start |> float32 |> round)
+        PointF(fst stop |> float32 |> round, snd stop |> float32 |> round) |]
     image.Mutate(fun ctx -> ctx.DrawLines(pen, points) |> ignore)
     image
 
