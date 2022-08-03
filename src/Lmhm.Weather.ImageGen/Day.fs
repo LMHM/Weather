@@ -61,7 +61,7 @@ module private Process =
         let hourNow = float DateTime.Now.Hour * 1.0<h>
         let minuteOffset = (float DateTime.Now.Minute * 1.0<minute>) * pixelsPerMinute
         let toHourOffset hour = (hour, (hour - hourNow) * pixelsPerHour - minuteOffset + margin)
-        let inDrawArea (_, offsetX) = offsetX >= margin && offsetX <= (24.0<h> * pixelsPerHour + margin)
+        let inDrawArea (_, offsetX) = offsetX >= 0.0<px> && offsetX <= 336.0<px>
         [ hourNow .. 1.0<h> .. hourNow + 25.0<h> ]
         |> List.map toHourOffset
         |> List.filter inDrawArea
@@ -83,23 +83,36 @@ module private Process =
     let timeOffset timestamp =
         344.0<px> + ((timestamp - DateTime.Now).TotalMinutes * 1.0<minute> * pixelsPerMinute)
 
+    let plot pen timestamp y image =
+        (timeOffset timestamp, y) |> drawPoint pen <| image
+
     let drawWindDirectionGraph data image =
-        let plotDirection (timestamp : DateTime) direction = 
-            (timeOffset timestamp, 44.0<px> - direction * pixelsPerDegree)
-            |> drawPoint penNormalGraph <| image
-        let plot image value =
+        let current = 
+            match (List.last data).WindDirection with
+            | Some v -> v |> float |> sprintf "%3.0f"
+            | None -> "---"
+        let plotDirection image value =
             match value.WindDirection with
-            | Some direction -> plotDirection value.Timestamp direction
+            | Some direction -> plot penNormalGraph value.Timestamp (44.0<px> - (direction * pixelsPerDegree)) image
             | None -> image
-        data |> List.fold plot image
+        List.fold plotDirection image data
+        |> drawText current Color.White (466.0<px>, 18.0<px>)
 
     let drawWindSpeedGraph data image =
         let (minAvg, _) = data |> minMaxBy (fun x -> x.WindSpeed) 5.0<m/s>
         let (_, maxMax) = data |> minMaxBy (fun x -> x.WindSpeedMax) 5.0<m/s>
         let pixelsPerMeterPerSecond = 28.0<px> / (maxMax - minAvg)
+        let currentAvg = 
+            match (List.last data).WindSpeed with
+            | Some v -> v |> float |> sprintf "%4.1f"
+            | None -> " ---"
+        let currentMax =
+            match (List.last data).WindSpeedMax with
+            | Some v -> v |> float |> sprintf "%4.1f"
+            | None -> " ---"
+        let range = maxMax |> sprintf "[0-%2.0f]" 
         let plotSpeed pen timestamp speed =
-            (timeOffset timestamp, 76.0<px> - speed * pixelsPerMeterPerSecond)
-            |> drawPoint pen <| image
+            plot pen timestamp (76.0<px> - (speed * pixelsPerMeterPerSecond)) image
         let plotMax image value =
             match value.WindSpeedMax with
             | Some speed -> min speed 20.0<m/s> |> plotSpeed penMaxGraph value.Timestamp
@@ -110,78 +123,113 @@ module private Process =
            | None -> image
         List.fold plotMax image data
         |> List.fold plotAverage <| data
+        |> drawText currentAvg Color.White (458.0<px>, 50.0<px>)
+        |> drawText currentMax Color.Cyan (458.0<px>, 66.0<px>)
+        |> drawText range Color.LightGray (350.0<px>, 66.0<px>)
 
     let drawPressureGraph data image =
         let (minPressure, maxPressure) = data |> minMaxBy (fun x -> x.AirPressureSeaLevel) 5.0<hPa>
         let pixelsPerhPa = 28.0<px> / (maxPressure - minPressure)
-        let plotPressure timestamp pressure =
-            (timeOffset timestamp, 108.0<px> - (pressure - minPressure) * pixelsPerhPa)
-            |> drawPoint penNormalGraph <| image
+        let current =
+            match (List.last data).AirPressureSeaLevel with
+            | Some v -> v |> float |> sprintf "%6.1f"
+            | None -> "  ---"
+        let range = sprintf "[%4.0f-%4.0f]" minPressure maxPressure
         let plot image value =
             match value.AirPressureSeaLevel with
-            | Some pressure -> plotPressure value.Timestamp pressure
+            | Some pressure -> plot penNormalGraph value.Timestamp (108.0<px> - (pressure - minPressure) * pixelsPerhPa) image
             | None -> image
         List.fold plot image data
+        |> drawText current Color.White (442.0<px>, 82.0<px>)
+        |> drawText range Color.LightGray (350.0<px>, 98.0<px>)
 
     let drawTemperatureGraph data image =
         let (minTemp, maxTemp) = data |> minMaxBy (fun x -> x.TemperatureAir) 5.0<degC>
         let pixelsPerDegree = 28.0<px> / (maxTemp - minTemp)
-        let plotTemp timestamp temp =
-            (timeOffset timestamp, 140.0<px> - (temp - minTemp) * pixelsPerDegree)
-            |> drawPoint penNormalGraph <| image
+        let current = 
+            match (List.last data).TemperatureAir with
+            | Some v -> v |> float |> sprintf "%4.1f"
+            | None -> "---"
+        let range = sprintf "[%+2.0f-%+2.0f]" minTemp maxTemp
         let plot image value =
             match value.TemperatureAir with
-            | Some temp -> plotTemp value.Timestamp temp
+            | Some temp -> plot penNormalGraph value.Timestamp (140.0<px> - (temp - minTemp) * pixelsPerDegree) image
             | None -> image
         List.fold plot image data
+        |> drawText current Color.White (458.0<px>, 114.0<px>)
+        |> drawText range Color.LightGray (350.0<px>, 130.0<px>)
 
     let drawRelativeHumidity data image =
         let (minRh, maxRh) = data |> minMaxBy (fun x -> x.RelativeHumidity) 5.0<percent>
         let pixelsPerPercent = 28.0<px> / (maxRh - minRh)
-        let plotRelativeHumidity timestamp rh =
-            (timeOffset timestamp, 172.0<px> - (rh - minRh) * pixelsPerPercent)
-            |> drawPoint penNormalGraph <| image
+        let current =
+            match (List.last data).RelativeHumidity with
+            | Some v -> v |> float |> sprintf "%2.0f"
+            | None -> "--"
+        let dewPoint =
+            match (List.last data).DewPoint with
+            | Some v -> v |> float |> sprintf "%4.1f"
+            | None -> " ---"
+        let range = sprintf "[%2.0f-%2.0f]" minRh maxRh
         let plot image value =
             match value.RelativeHumidity with
-            | Some rh -> plotRelativeHumidity value.Timestamp rh
+            | Some rh -> plot penNormalGraph value.Timestamp (172.0<px> - (rh - minRh) * pixelsPerPercent) image
             | None -> image
         List.fold plot image data
+        |> drawText current Color.White (472.0<px>, 146.0<px>)
+        |> drawText range Color.LightGray (350.0<px>, 162.0<px>)
+        |> drawText dewPoint Color.White (458.0<px>, 162.0<px>)
     
     let drawPulses data image =
-        let (minPulses, maxPulses) = data |> minMaxBy (fun x -> x.Pulses) 5.0<p>
-        let pixelsPerPulse = 28.0<px> / (maxPulses - minPulses)
+        let (_, maxPulses) = data |> minMaxBy (fun x -> x.Pulses) 5.0<p>
+        let pixelsPerPulse = 28.0<px> / maxPulses
+        let current =
+            match (List.last data).Pulses with
+            | Some v -> v |> float |> sprintf "%3.0f"
+            | None -> "---"
+        let range = sprintf "[0-%3.0f]" maxPulses
         let plotPulses timestamp pulses =
             let x = timeOffset timestamp
-            drawLine penNormalGraph (x, 204.0<px>) (x, 204.0<px> - (pulses - minPulses) * pixelsPerPulse) image
+            drawLine penNormalGraph (x, 204.0<px>) (x, 204.0<px> - pulses * pixelsPerPulse) image
         let plot image value =
             match value.Pulses with
             | Some p when p > 0.0<p> -> plotPulses value.Timestamp p
             | _ -> image
         List.fold plot image data
+        |> drawText current Color.White (466.0<px>, 178.0<px>)
+        |> drawText range Color.LightGray (350.0<px>, 192.0<px>)
 
     let drawVisibility data image =
         let (minVis, maxVis) = data |> minMaxBy (fun x -> x.Visibility) 5.0<km>
         let pixelsPerKm = 28.0<px> / (maxVis - minVis)
-        let plotVisibility timestamp vis =
-            (timeOffset timestamp, 236.0<px> - (vis - minVis) * pixelsPerKm)
-            |> drawPoint penNormalGraph <| image
+        let current = 
+            match (List.last data).Visibility with
+            | Some v -> v |> float |> sprintf "%2.0f"
+            | None -> "--"
+        let range = sprintf "[%1.0f-%2.0f]" minVis maxVis
         let plot image value =
             match value.Visibility with
-            | Some vis -> plotVisibility value.Timestamp vis
+            | Some vis -> plot penNormalGraph value.Timestamp (236.0<px> - (vis - minVis) * pixelsPerKm) image
             | None -> image
         List.fold plot image data
+        |> drawText current Color.White (472.0<px>, 210.0<px>)
+        |> drawText range Color.LightGray (350.0<px>, 226.0<px>)
 
     let drawShortWave data image =
         let (minShort, maxShort) = data |> minMaxBy (fun x -> x.ShortWave) 10.0<W/m^2>
         let pixelsPerShortWave = 28.0<px> / (maxShort - minShort)
-        let plotShortWave timestamp sw =
-            (timeOffset timestamp, 268.0<px> - (sw - minShort) * pixelsPerShortWave)
-            |> drawPoint penNormalGraph <| image
+        let current =
+            match (List.last data).ShortWave with
+            | Some v -> v |> float |> sprintf "%3.0f"
+            | None -> "---"
+        let range = sprintf "[%1.0f-%1.0f]" minShort maxShort
         let plot image value =
             match value.ShortWave with
-            | Some sw -> plotShortWave value.Timestamp sw
+            | Some sw -> plot penNormalGraph value.Timestamp (268.0<px> - (sw - minShort) * pixelsPerShortWave) image
             | None -> image
         List.fold plot image data
+        |> drawText current Color.White (466.0<px>, 242.0<px>)
+        |> drawText range Color.LightGray (536.0<px>, 242.0<px>)
 
     let generateImage data =
         loadImage "weather_template.png"
