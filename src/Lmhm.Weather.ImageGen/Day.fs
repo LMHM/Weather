@@ -34,6 +34,11 @@ module private Process =
             |> modUp modulo
         (maximum - span, maximum)
 
+    let formatValue<[<Measure>]'u> (projection : Input.SensorData -> float<'u> option) format novalue data =
+        match (List.last data) |> projection with
+        | Some v -> v |> float |> sprintf format
+        | None -> novalue
+
     let drawTimeDigits offsetY (hourOffsetX, image) =
         let hourStr hour = hour % 24.0<h> |> sprintf "%02.0f"
         let thirdHour (hour, _) = hour % 3.0<h> = 0.0<h>
@@ -83,10 +88,7 @@ module private Process =
         (timeOffset timestamp, y) |> drawPoint pen <| image
 
     let drawWindDirectionGraph data image =
-        let current = 
-            match (List.last data).WindDirection with
-            | Some v -> v |> float |> sprintf "%3.0f"
-            | None -> "---"
+        let current = formatValue (fun x -> x.WindDirection) "%3.0f" "---" data
         let plotDirection image value =
             match value.WindDirection with
             | Some direction -> plot penNormalGraph value.Timestamp (44.0<px> - (direction * pixelsPerDegree)) image
@@ -102,14 +104,8 @@ module private Process =
             |> modUp 5.0<m/s>
             |> max 20.0<m/s>
         let pixelsPerMeterPerSecond = 28.0<px> / maxMax
-        let currentAvg = 
-            match (List.last data).WindSpeed with
-            | Some v -> v |> float |> sprintf "%4.1f"
-            | None -> " ---"
-        let currentMax =
-            match (List.last data).WindSpeedMax with
-            | Some v -> v |> float |> sprintf "%4.1f"
-            | None -> " ---"
+        let currentAvg = formatValue (fun x -> x.WindSpeed) "%4.1f" " ---" data
+        let currentMax = formatValue (fun x -> x.WindSpeedMax) "%4.1f" " ---" data
         let range = maxMax |> sprintf "[0-%2.0f]" 
         let plotSpeed pen timestamp speed =
             plot pen timestamp (76.0<px> - (speed * pixelsPerMeterPerSecond)) image
@@ -130,10 +126,8 @@ module private Process =
     let drawPressureGraph data image =
         let (minPressure, maxPressure) = data |> maxSpanBy (fun x -> x.AirPressureSeaLevel) 5.0<hPa> 20.0<hPa>
         let pixelsPerhPa = 28.0<px> / (maxPressure - minPressure)
-        let current =
-            match (List.last data).AirPressureSeaLevel with
-            | Some v -> v |> float |> sprintf "%6.1f"
-            | None -> "  ---"
+        let current = formatValue (fun x -> x.AirPressureSeaLevel) "%6.1f" "  ---" data
+        let currentChange = formatValue (fun x -> x.AirPressureChange) "%+4.1f" " ---" data
         let range = sprintf "[%4.0f-%4.0f]" minPressure maxPressure
         let plot image value =
             match value.AirPressureSeaLevel with
@@ -142,14 +136,13 @@ module private Process =
         List.fold plot image data
         |> drawText current Color.White (442.0<px>, 82.0<px>)
         |> drawText range Color.LightGray (350.0<px>, 98.0<px>)
+        |> drawText currentChange Color.White (532.0<px>, 82.0<px>)
 
     let drawTemperatureGraph data image =
         let (minTemp, maxTemp) = data |> maxSpanBy (fun x -> x.TemperatureAir) 5.0<degC> 20.0<degC>
         let pixelsPerDegree = 28.0<px> / (maxTemp - minTemp)
-        let current = 
-            match (List.last data).TemperatureAir with
-            | Some v -> v |> float |> sprintf "%4.1f"
-            | None -> "---"
+        let current = formatValue (fun x -> x.TemperatureAir) "%4.1f" " ---" data
+        let currentGround = formatValue (fun x -> x.TemperatureGround) "%4.1f" " ---" data
         let range = sprintf "[%+2.0f-%+2.0f]" minTemp maxTemp
         let plot image value =
             match value.TemperatureAir with
@@ -157,19 +150,14 @@ module private Process =
             | None -> image
         List.fold plot image data
         |> drawText current Color.White (458.0<px>, 114.0<px>)
+        |> drawText currentGround Color.White (576.0<px>, 114.0<px>)
         |> drawText range Color.LightGray (350.0<px>, 130.0<px>)
 
     let drawRelativeHumidity data image =
         let (minRh, maxRh) = (20.0<percent>, 100.0<percent>)
         let pixelsPerPercent = 28.0<px> / (maxRh - minRh)
-        let current =
-            match (List.last data).RelativeHumidity with
-            | Some v -> v |> float |> sprintf "%2.0f"
-            | None -> "--"
-        let dewPoint =
-            match (List.last data).DewPoint with
-            | Some v -> v |> float |> sprintf "%4.1f"
-            | None -> " ---"
+        let current = formatValue (fun x -> x.RelativeHumidity) "%2.0f" "--" data
+        let dewPoint = formatValue (fun x -> x.DewPoint) "%4.1f" " ---" data
         let range = sprintf "[%2.0f-%2.0f]" minRh maxRh
         let plot image value =
             match value.RelativeHumidity with
@@ -183,10 +171,7 @@ module private Process =
     let drawPulses data image =
         let maxPulses = 400.0<p>
         let pixelsPerPulse = 28.0<px> / maxPulses
-        let current =
-            match (List.last data).Pulses with
-            | Some v -> v |> float |> sprintf "%3.0f"
-            | None -> "---"
+        let current = formatValue (fun x -> x.Pulses) "%3.0f" "---" data
         let range = sprintf "[0-%3.0f]" maxPulses
         let plotPulses timestamp pulses =
             let x = timeOffset timestamp
@@ -202,10 +187,7 @@ module private Process =
     let drawVisibility data image =
         let maxVis = 20.0<km>
         let pixelsPerKm = 28.0<px> / maxVis
-        let current = 
-            match (List.last data).Visibility with
-            | Some v -> v |> float |> sprintf "%2.0f"
-            | None -> "--"
+        let current = formatValue (fun x -> x.Visibility) "%2.0f" "--" data
         let range = sprintf "[0-%2.0f]" maxVis
         let plot image value =
             match value.Visibility with
@@ -218,10 +200,7 @@ module private Process =
     let drawShortWave data image =
         let maxShort = 1000.0<W/m^2>
         let pixelsPerShortWave = 28.0<px> / maxShort
-        let current =
-            match (List.last data).ShortWave with
-            | Some v -> v |> float |> sprintf "%3.0f"
-            | None -> "---"
+        let current = formatValue (fun x -> x.ShortWave) "%3.0f" "---" data
         let range = sprintf "[0-%1.0f]" maxShort
         let plot image value =
             match value.ShortWave with
@@ -231,8 +210,8 @@ module private Process =
         |> drawText current Color.White (466.0<px>, 242.0<px>)
         |> drawText range Color.LightGray (536.0<px>, 242.0<px>)
 
-    let generateImage data =
-        loadImage "weather_template.png"
+    let drawGraphs data image =
+        image
         |> drawTimeScales
         |> drawWindDirectionGraph data
         |> drawWindSpeedGraph data
@@ -242,6 +221,31 @@ module private Process =
         |> drawPulses data
         |> drawVisibility data
         |> drawShortWave data
+
+    let drawTimestamp data image =
+        let currentTime = (List.last data).Timestamp
+        image
+        |> drawText (currentTime.ToString("yyyy-MM-dd")) Color.Orange (552.0<px>, 18.0<px>)
+        |> drawText (currentTime.ToString("HH:mm")) Color.Orange (576.0<px>, 32.0<px>)
+
+    let drawPrecipitation data image =
+        let last hours =
+            data
+            |> List.filter (fun x -> x.Timestamp > DateTime.Now.AddHours(-hours))
+            |> List.choose (fun x -> x.Precipitation)
+            |> List.sum
+            |> sprintf "%3.0f"
+        image
+        |> drawText (last 3) Color.White (584.0<px>, 162.0<px>)
+        |> drawText (last 6) Color.White (584.0<px>, 178.0<px>)
+        |> drawText (last 12) Color.White (584.0<px>, 194.0<px>)
+        |> drawText (last 24) Color.White (584.0<px>, 210.0<px>)
+
+    let generateImage data =
+        loadImage "weather_template.png"
+        |> drawGraphs data
+        |> drawTimestamp data
+        |> drawPrecipitation data
 
 let readSensorData path =
     let today = DateOnly.FromDateTime(DateTime.Today)
