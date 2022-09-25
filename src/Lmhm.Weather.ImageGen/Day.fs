@@ -241,11 +241,36 @@ module private Process =
         |> drawText (last 12) Color.White (584.0<px>, 194.0<px>)
         |> drawText (last 24) Color.White (584.0<px>, 210.0<px>)
 
+    let drawWindDirectionMeter data image =
+        let current = formatValue (fun x -> x.WindDirection) "%03.0f" "---" data
+        let drawIndicator pen (minLength : float<px>) (maxLength : float<px>) angle =
+            let xStart = 75.0<px> + (Math.Sin(angle) * minLength)
+            let yStart = 390.0<px> - (Math.Cos(angle) * minLength)
+            let xStop = 75.0<px> + (Math.Sin(angle) * maxLength)
+            let yStop = 390.0<px> - (Math.Cos(angle) * maxLength)
+            drawLine pen (xStart, yStart) (xStop, yStop) image
+        let drawDirection = drawIndicator penNormalGraph 12.0<px> 52.0<px>
+        let drawMinMax = drawIndicator penSolidTick 32.0<px> 52.0<px>
+        let drawMeter (projection : Input.SensorData -> float<deg> option) draw data image =
+            match (List.last data) |> projection with
+            | Some v -> draw (v * Math.PI / 180.0<deg>)
+            | None -> image
+        image
+        |> drawText current Color.White (64.0<px>, 385.0<px>)
+        |> drawMeter (fun x -> x.WindDirection) drawDirection data
+        |> drawMeter (fun x -> x.WindHistoryMaxDirection) drawMinMax data
+        |> drawMeter (fun x -> x.WindHistoryMinDirection) drawMinMax data
+
+    let drawMeters data image =
+        image
+        |> drawWindDirectionMeter data
+
     let generateImage data =
         loadImage "weather_template.png"
         |> drawGraphs data
         |> drawTimestamp data
         |> drawPrecipitation data
+        |> drawMeters data
 
 let readSensorData path =
     let today = DateOnly.FromDateTime(DateTime.Today)
