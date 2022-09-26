@@ -18,10 +18,14 @@ module private Process =
     let pixelsPerMinute = pixelsPerHour / 60.0<minute/h>
     let pixelsPerDegree = 28.0<px> / 360.0<deg>
 
+    let colorNeonBlue = Color(PixelFormats.Abgr32(55uy, 55uy, 255uy))
+
     let penNormalGraph = Pens.Solid(Color.White, 1.0f)
     let penMaxGraph = Pens.Solid(Color.Cyan, 1.0f)
     let penSolidTick = Pens.Solid(Color.DarkCyan, 1.0f)
     let penDotTick = Pens.Dot(Color.DarkCyan, 1.0f)
+    let penNeonBlue = Pens.Solid(colorNeonBlue, 1.0f)
+    let penYellow = Pens.Solid(Color.Yellow, 1.0f)
 
     let modUp<[<Measure>]'u> (denominator: float<'u>) (value : float<'u>) =
         if value % denominator = 0.0<_> then value else value + denominator - value % denominator
@@ -261,9 +265,41 @@ module private Process =
         |> drawMeter (fun x -> x.WindHistoryMaxDirection) drawMinMax data
         |> drawMeter (fun x -> x.WindHistoryMinDirection) drawMinMax data
 
+    let drawWindSpeedMeter data image =
+        let max10min =
+            data
+            |> List.filter (fun x -> x.Timestamp > DateTime.Now.AddMinutes(-10))
+            |> List.choose (fun x -> x.WindSpeedMax)
+            |> List.max
+        let max24h = data |> List.choose (fun x -> x.WindSpeedMax) |> List.max
+        let current = formatValue (fun x -> x.WindSpeed) "%4.1f" " ---" data
+        let drawIndicator pen (minLength : float<px>) (maxLength : float<px>) angle =
+            let xStart = 223.0<px> + (Math.Sin(angle) * minLength)
+            let yStart = 400.0<px> - (Math.Cos(angle) * minLength)
+            let xStop = 223.0<px> + (Math.Sin(angle) * maxLength)
+            let yStop = 400.0<px> - (Math.Cos(angle) * maxLength)
+            drawLine pen (xStart, yStart) (xStop, yStop) image
+        let speedToAngle (speed: float<m/s>) =
+            (speed * 240.0<s/m>/30.0 - 120.0) * Math.PI/180.0
+        let drawCurrent = drawIndicator penNormalGraph 5.0<px> 55.0<px>
+        let drawMax10Min = drawIndicator penNeonBlue 40.0<px> 55.0<px>
+        let drawMax = drawIndicator penYellow 40.0<px> 55.0<px>
+        let drawMeter (projection : Input.SensorData -> float<m/s> option) draw data image =
+            match (List.last data |> projection) with
+            | Some speed -> draw (speedToAngle speed)
+            | None -> image
+        image
+        |> drawText current Color.White (210.0<px>, 416.0<px>)
+        |> drawText (sprintf "%4.1f" max10min) colorNeonBlue (210.0<px>, 449.0<px>)
+        |> drawText (sprintf "%4.1f" max24h) Color.Yellow (210.0<px>, 466.0<px>)
+        |> drawMeter (fun x -> x.WindSpeed) drawCurrent data
+        |> drawMeter (fun _ -> Some max10min) drawMax10Min data
+        |> drawMeter (fun _ -> Some max24h) drawMax data
+
     let drawMeters data image =
         image
         |> drawWindDirectionMeter data
+        |> drawWindSpeedMeter data
 
     let generateImage data =
         loadImage "weather_template.png"
