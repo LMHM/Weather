@@ -245,27 +245,34 @@ module private Process =
         |> drawText (last 12) Color.White (584.0<px>, 194.0<px>)
         |> drawText (last 24) Color.White (584.0<px>, 210.0<px>)
 
+    let drawIndicator pen (origin : Point) (startRadius : float<px>) (endRadius : float<px>) angle =
+        let xOrigin = fst origin
+        let yOrigin = snd origin
+        let xStart = xOrigin + (Math.Sin(angle) * startRadius)
+        let yStart = yOrigin - (Math.Cos(angle) * startRadius)
+        let xEnd = xOrigin + (Math.Sin(angle) * endRadius)
+        let yEnd = yOrigin - (Math.Cos(angle) * endRadius)
+        drawLine pen (xStart, yStart) (xEnd, yEnd)
+
+    let drawMeter<[<Measure>]'u> (projection : Input.SensorData -> float<'u> option) (toAngle : float<'u> -> float) draw data image =
+        match (List.last data) |> projection with
+        | Some v -> draw (toAngle v) image
+        | None -> image
+
     let drawWindDirectionMeter data image =
+        let origin = (75.0<px>, 390.0<px>)
+        let toAngle (v : float<deg>) = v * Math.PI / 180.0<deg>
         let current = formatValue (fun x -> x.WindDirection) "%03.0f" "---" data
-        let drawIndicator pen (minLength : float<px>) (maxLength : float<px>) angle =
-            let xStart = 75.0<px> + (Math.Sin(angle) * minLength)
-            let yStart = 390.0<px> - (Math.Cos(angle) * minLength)
-            let xStop = 75.0<px> + (Math.Sin(angle) * maxLength)
-            let yStop = 390.0<px> - (Math.Cos(angle) * maxLength)
-            drawLine pen (xStart, yStart) (xStop, yStop) image
-        let drawDirection = drawIndicator penNormalGraph 12.0<px> 52.0<px>
-        let drawMinMax = drawIndicator penSolidTick 32.0<px> 52.0<px>
-        let drawMeter (projection : Input.SensorData -> float<deg> option) draw data image =
-            match (List.last data) |> projection with
-            | Some v -> draw (v * Math.PI / 180.0<deg>)
-            | None -> image
+        let drawDirection = drawIndicator penNormalGraph origin  12.0<px> 52.0<px>
+        let drawMinMax = drawIndicator penSolidTick origin 32.0<px> 52.0<px>
         image
         |> drawText current Color.White (64.0<px>, 385.0<px>)
-        |> drawMeter (fun x -> x.WindDirection) drawDirection data
-        |> drawMeter (fun x -> x.WindHistoryMaxDirection) drawMinMax data
-        |> drawMeter (fun x -> x.WindHistoryMinDirection) drawMinMax data
+        |> drawMeter (fun x -> x.WindDirection) toAngle drawDirection data
+        |> drawMeter (fun x -> x.WindHistoryMaxDirection) toAngle drawMinMax data
+        |> drawMeter (fun x -> x.WindHistoryMinDirection) toAngle drawMinMax data
 
     let drawWindSpeedMeter data image =
+        let origin = (223.0<px>, 400.0<px>)
         let max10min =
             data
             |> List.filter (fun x -> x.Timestamp > DateTime.Now.AddMinutes(-10))
@@ -273,33 +280,39 @@ module private Process =
             |> List.max
         let max24h = data |> List.choose (fun x -> x.WindSpeedMax) |> List.max
         let current = formatValue (fun x -> x.WindSpeed) "%4.1f" " ---" data
-        let drawIndicator pen (minLength : float<px>) (maxLength : float<px>) angle =
-            let xStart = 223.0<px> + (Math.Sin(angle) * minLength)
-            let yStart = 400.0<px> - (Math.Cos(angle) * minLength)
-            let xStop = 223.0<px> + (Math.Sin(angle) * maxLength)
-            let yStop = 400.0<px> - (Math.Cos(angle) * maxLength)
-            drawLine pen (xStart, yStart) (xStop, yStop) image
-        let speedToAngle (speed: float<m/s>) =
-            (speed * 240.0<s/m>/30.0 - 120.0) * Math.PI/180.0
-        let drawCurrent = drawIndicator penNormalGraph 5.0<px> 55.0<px>
-        let drawMax10Min = drawIndicator penNeonBlue 40.0<px> 55.0<px>
-        let drawMax = drawIndicator penYellow 40.0<px> 55.0<px>
-        let drawMeter (projection : Input.SensorData -> float<m/s> option) draw data image =
-            match (List.last data |> projection) with
-            | Some speed -> draw (speedToAngle speed)
-            | None -> image
+        let speedToAngle (speed: float<m/s>) = (speed * 240.0<s/m>/30.0 - 120.0) * Math.PI/180.0
+        let drawCurrent = drawIndicator penNormalGraph origin 5.0<px> 55.0<px>
+        let drawMax10Min = drawIndicator penNeonBlue origin 40.0<px> 55.0<px>
+        let drawMax = drawIndicator penYellow origin 40.0<px> 55.0<px>
         image
         |> drawText current Color.White (210.0<px>, 416.0<px>)
         |> drawText (sprintf "%4.1f" max10min) colorNeonBlue (210.0<px>, 449.0<px>)
         |> drawText (sprintf "%4.1f" max24h) Color.Yellow (210.0<px>, 466.0<px>)
-        |> drawMeter (fun x -> x.WindSpeed) drawCurrent data
-        |> drawMeter (fun _ -> Some max10min) drawMax10Min data
-        |> drawMeter (fun _ -> Some max24h) drawMax data
+        |> drawMeter (fun x -> x.WindSpeed) speedToAngle drawCurrent data
+        |> drawMeter (fun _ -> Some max10min) speedToAngle drawMax10Min data
+        |> drawMeter (fun _ -> Some max24h) speedToAngle drawMax data
+
+    let drawAirPressureMeter data image =
+        let origin = (393.0<px>, 400.0<px>)
+        let min = data |> List.choose (fun x -> x.AirPressureSeaLevel) |> List.min
+        let max = data |> List.choose (fun x -> x.AirPressureSeaLevel) |> List.max
+        let current = formatValue (fun x -> x.AirPressureSeaLevel) "%6.1f" "  ---" data
+        let pressureToAngle (pressure : float<hPa>) = ((pressure - 1000.0<hPa>) * 240.0/80.0<hPa>) * Math.PI/180.0
+        let drawCurrent = drawIndicator penNormalGraph origin 5.0<px> 55.0<px>
+        let drawMinMax = drawIndicator penYellow origin 40.0<px> 55.0<px>
+        image
+        |> drawText current Color.White (372.0<px>, 416.0<px>)
+        |> drawText (sprintf "%6.1f" min) Color.Yellow (352.0<px>, 466.0<px>)
+        |> drawText (sprintf "%6.1f" max) Color.Yellow (408.0<px>, 466.0<px>)
+        |> drawMeter (fun x -> x.AirPressureSeaLevel) pressureToAngle drawCurrent data
+        |> drawMeter (fun _ -> Some min) pressureToAngle drawMinMax data
+        |> drawMeter (fun _ -> Some max) pressureToAngle drawMinMax data
 
     let drawMeters data image =
         image
         |> drawWindDirectionMeter data
         |> drawWindSpeedMeter data
+        |> drawAirPressureMeter data
 
     let generateImage data =
         loadImage "weather_template.png"
