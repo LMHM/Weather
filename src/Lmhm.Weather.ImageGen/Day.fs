@@ -308,11 +308,28 @@ module private Process =
         |> drawMeter (fun _ -> Some min) pressureToAngle drawMinMax data
         |> drawMeter (fun _ -> Some max) pressureToAngle drawMinMax data
 
+    let drawTemperatureMeter data image =
+        let origin = (557.0<px>, 400.0<px>)
+        let min = data |> List.choose (fun x -> x.TemperatureAir) |> List.min
+        let max = data |> List.choose (fun x -> x.TemperatureAir) |> List.max
+        let current = formatValue (fun x -> x.TemperatureAir) "%4.1f" " ---" data
+        let temperatureToAngle (temperature : float<degC>) = (temperature * 240.0/60.0<degC>) * Math.PI/180.0
+        let drawCurrent = drawIndicator penNormalGraph origin 5.0<px> 55.0<px>
+        let drawMinMax = drawIndicator penYellow origin 40.0<px> 55.0<px>
+        image
+        |> drawText current Color.White (542.0<px>, 416.0<px>)
+        |> drawText (sprintf "%5.1f" min) Color.Yellow (536.0<px>, 466.0<px>)
+        |> drawText (sprintf "%5.1f" max) Color.Yellow (584.0<px>, 466.0<px>)
+        |> drawMeter (fun x -> x.TemperatureAir) temperatureToAngle drawCurrent data
+        |> drawMeter (fun _ -> Some min) temperatureToAngle drawMinMax data
+        |> drawMeter (fun _ -> Some max) temperatureToAngle drawMinMax data
+
     let drawMeters data image =
         image
         |> drawWindDirectionMeter data
         |> drawWindSpeedMeter data
         |> drawAirPressureMeter data
+        |> drawTemperatureMeter data
 
     let generateImage data =
         loadImage "weather_template.png"
