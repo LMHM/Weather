@@ -5,77 +5,8 @@ open SixLabors.ImageSharp
 open Lmhm.Weather.ImageGen.Input
 open Lmhm.Weather.ImageGen.Drawing
 
-type Data = 
-  { Date: DateOnly
-    TempAvg: float<degC> option
-    TempMin: Measuring<degC> option
-    TempMax: Measuring<degC> option
-    WindMax: Measuring<m/s> option
-    PressureMin: Measuring<hPa> option
-    PressureMax: Measuring<hPa> option
-    Rain: float<mm> option }
-    
-    static member Default =
-      { Date = DateOnly.FromDateTime(DateTime.Today)
-        TempAvg = None
-        TempMin = None
-        TempMax = None
-        WindMax = None
-        PressureMin = None
-        PressureMax = None
-        Rain = None }
-
-module Input =
-
-    open System.IO
-    open System.Globalization
-
-    let filePath path pattern (date: DateOnly) =
-        let filename = date.ToString("yyMMdd") |> sprintf pattern
-        Path.Combine(path, filename)
-
-    let readTempAvg path date =
-        let filePath = filePath path "MT%s.TXT" date
-        if not(File.Exists(filePath)) then
-            None
-        else
-            File.ReadAllLines(filePath)[0] |> float |> (*) 1.0<degC> |> Some
-
-    let readMeasuring<[<Measure>]'u> (line: string) : Measuring<'u> option =
-        {
-            Value = Double.Parse(line[..10], CultureInfo.InvariantCulture) |> LanguagePrimitives.FloatWithMeasure
-            Time = line[14..] |> DateTime.Parse
-        } |> Some
-
-    let readRain path date =
-        let fileName = filePath path "DN%s.TXT" date
-        if not(File.Exists(fileName)) then
-            None
-        else
-            File.ReadAllLines(fileName)[0] |> float |> (*) 1.0<mm> |> Some
-
-    let readDay path (date: DateOnly) =
-        let filePath = filePath path "DS%s.TXT" date
-        if not(File.Exists(filePath)) then
-            { Data.Default with Date = date }
-        else
-            let lines = File.ReadAllLines(filePath)
-            {
-                Date = date
-                TempAvg = readTempAvg path date
-                TempMin = readMeasuring<degC> lines[3]
-                TempMax = readMeasuring<degC> lines[4]
-                WindMax = readMeasuring<m/s> lines[0]
-                PressureMin = readMeasuring<hPa> lines[1]
-                PressureMax = readMeasuring<hPa> lines[2]
-                Rain = readRain path date
-            }
-
-    let readData path =
-        List.map (readDay path)
-
 module Process =
-    
+
     let formatDate data =
         data.Date.ToString("MM-dd")
 
@@ -133,6 +64,6 @@ module Process =
 let run inputPath outputPath =
     let today = DateOnly.FromDateTime(DateTime.Today)
     today :: [for i in -1..-1..-20 -> today.AddDays i]
-    |> Input.readData inputPath 
+    |> readDaySummary inputPath
     |> Process.generateImage
     |> saveImage (outputPath + "20dag.png")

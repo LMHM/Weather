@@ -338,11 +338,11 @@ module private Process =
         |> drawPrecipitation data
         |> drawMeters data
 
-let readSensorData path =
+let private readSensorData path =
     let today = DateOnly.FromDateTime(DateTime.Today)
     let last24hrs = DateTime.Now.AddDays(-1)
     let now = DateTime.Now
-    Input.read path (today.AddDays(-1)) today
+    Input.readSensorData path (today.AddDays(-1)) today
     |> List.filter (fun data -> data.Timestamp >= last24hrs && data.Timestamp <= now)
 
 let run inputPath outputPath =

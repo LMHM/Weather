@@ -1,12 +1,12 @@
 ﻿module Lmhm.Weather.ImageGen.Program
 
-open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Hosting
-open Polly   
 open System
 open System.Threading
 open System.Threading.Tasks
-open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Options
+open Polly   
 open Serilog
 
 type Settings(
@@ -28,14 +28,16 @@ type Settings(
 
 type TimedService(
     logger: ILogger,
-    settings: Settings) =
+    options: IOptions<Settings>) =
 
+    let settings = options.Value
     let timer =
         new Timer(fun obj -> 
             logger.Information("Running image generation")
             try
                 try
                     Day.run settings.InputPath settings.OutputPath
+                    Month.run settings.InputPath settings.OutputPath
                 with
                 | ex -> logger.Error(ex, "Failed to run image generation")
             finally
@@ -44,9 +46,8 @@ type TimedService(
     interface IHostedService with
         member this.StartAsync(cancellationToken: CancellationToken) = 
             logger.Information("Starting Timer")
-            //let due = 60 - DateTime.Now.Second + settings.StartSecond
-            //timer.Change(due * 1000, settings.Period) |> ignore
-            timer.Change(0, settings.Period * 1000) |> ignore
+            let due = 60 - DateTime.Now.Second + settings.StartSecond
+            timer.Change(due * 1000, settings.Period * 1000) |> ignore
             Task.CompletedTask
 
         member this.StopAsync(cancellationToken: CancellationToken) = 
@@ -58,7 +59,7 @@ type TimedService(
         member this.Dispose() = timer.Dispose()
 
 let addServices (ctx: HostBuilderContext) (svc: IServiceCollection) =
-    svc.AddSingleton(ctx.Configuration.GetSection("Settings").Get<Settings>())
+    svc.Configure<Settings>(ctx.Configuration.GetSection("Settings"))
        .AddHostedService<TimedService>()
     |> ignore
 
