@@ -10,7 +10,7 @@ module Process =
     let formatDate data =
         data.Date.ToString("MM-dd")
 
-    let dateColor data =
+    let dateColor (data : DaySummary) =
         match data.TempAvg with
         | None -> Color.White
         | Some x when x > 10.0<degC> -> Color.Red

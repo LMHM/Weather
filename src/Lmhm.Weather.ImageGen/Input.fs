@@ -51,6 +51,22 @@ type DaySummary =
     PressureMax: Measuring<hPa> option
     Rain: float<mm> option }
 
+type MonthSummary =
+  { Month: DateOnly    
+    TempAvg: float<degC> option
+    TempMin: Measuring<degC> option
+    TempMax: Measuring<degC> option
+    WindMax: Measuring<m/s> option
+    PressureMin: Measuring<hPa> option
+    PressureMax: Measuring<hPa> option
+    RainMax: float<mm> option
+    RainAccumulated: float<mm> option }
+
+type YearSummary =
+  { Today: DaySummary
+    Yesterday: DaySummary
+    Months : MonthSummary list }
+
 module private Datafiles =
 
     let filePath path pattern (date: DateOnly) =
@@ -169,3 +185,10 @@ let readSensorData path (fromDate: DateOnly) (toDate: DateOnly) =
 
 let readDaySummary path = 
     List.map (Datafiles.DaySummary.readDay path)
+
+let readYearSummary path date =
+    {
+        Today = Datafiles.DaySummary.readDay path date
+        Yesterday = Datafiles.DaySummary.readDay path (date.AddDays(-1))
+        Months = []
+    }

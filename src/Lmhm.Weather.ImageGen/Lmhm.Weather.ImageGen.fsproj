@@ -8,6 +8,7 @@
   <ItemGroup>
     <EmbeddedResource Include="weather_template.png" />
     <EmbeddedResource Include="20dag_template.png" />
+    <EmbeddedResource Include="summary_template.png" />
     <EmbeddedResource Include="consola.ttf" />
   </ItemGroup>
   
@@ -15,8 +16,8 @@
     <Compile Include="Input.fs" />
     <Compile Include="Drawing.fs" />
     <Compile Include="Day.fs" />
-    <Compile Include="AverageTemp.fs" />
     <Compile Include="Month.fs" />
+    <Compile Include="Year.fs" />
     <Compile Include="Program.fs" />
     <None Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

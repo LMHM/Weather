@@ -38,6 +38,7 @@ type TimedService(
                 try
                     Day.run settings.InputPath settings.OutputPath
                     Month.run settings.InputPath settings.OutputPath
+                    Year.run settings.InputPath settings.OutputPath
                 with
                 | ex -> logger.Error(ex, "Failed to run image generation")
             finally
