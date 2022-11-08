@@ -76,14 +76,12 @@ type DaySummary =
 
 type MonthSummary =
     { Month: DateOnly
-      TempAvg: float<degC> option
       TempMin: Measuring<degC> option
       TempMax: Measuring<degC> option
       WindMax: Measuring<m / s> option
       PressureMin: Measuring<hPa> option
       PressureMax: Measuring<hPa> option
-      RainMax: float<mm> option
-      RainAccumulated: float<mm> option }
+      Precipitation: float<mm> option }
 
 type YearSummary =
     { Today: DaySummary
@@ -208,6 +206,40 @@ module private Datafiles =
                   PressureMax = Measuring.readMeasuring<hPa> lines[2]
                   Rain = readRain path date }
 
+    module MonthSummary =
+
+        let readPrecipitation path (date: DateOnly) =
+            let fileName = date.ToString("yyMM") |> sprintf "MN%s.TXT"
+            let filePath = Path.Combine(path, fileName)
+
+            if not (File.Exists filePath) then
+                None
+            else
+                File.ReadAllLines(filePath)[0] |> float |> (*) 1.0<mm> |> Some
+
+        let readMonthSummary path (date: DateOnly) =
+            let fileName = date.ToString("yyMM") |> sprintf "MS%s.TXT"
+            let filePath = Path.Combine(path, fileName)
+
+            if not (File.Exists filePath) then
+                { Month = date
+                  TempMin = None
+                  TempMax = None
+                  WindMax = None
+                  PressureMin = None
+                  PressureMax = None
+                  Precipitation = readPrecipitation path date }
+            else
+                let lines = File.ReadAllLines filePath
+
+                { Month = date
+                  TempMin = Measuring.readMeasuring<degC> lines[4]
+                  TempMax = Measuring.readMeasuring<degC> lines[5]
+                  WindMax = Measuring.readMeasuring<m / s> lines[0]
+                  PressureMin = Measuring.readMeasuring<hPa> lines[1]
+                  PressureMax = Measuring.readMeasuring<hPa> lines[2]
+                  Precipitation = readPrecipitation path date }
+
 let readSensorData path (fromDate: DateOnly) (toDate: DateOnly) =
     [ for dayNumber = fromDate.DayNumber to toDate.DayNumber do
           yield! DateOnly.MinValue.AddDays(dayNumber) |> Datafiles.SensorData.readDay path ]
@@ -218,9 +250,4 @@ let readDaySummary path =
 let readYearSummary path date =
     { Today = date |> Datafiles.DaySummary.readDay path
       Yesterday = date.AddDays(-1) |> Datafiles.DaySummary.readDay path
-      Months = []
-    //for month in [-12..0] ->
-    //    date.AddMonths(month)
-    //    |> Datafiles.MonthSummary.readMonth path
-    //]
-    }
+      Months = [ for month in [ -12 .. 0 ] -> date.AddMonths(month) |> Datafiles.MonthSummary.readMonthSummary path ] }
