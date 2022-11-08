@@ -7,12 +7,12 @@ open SixLabors.ImageSharp
 
 module Process =
 
-    let formatMeasuring<[<Measure>]'u> format empty (measuring : Measuring<'u> option) =
+    let formatMeasuring<[<Measure>] 'u> format empty (measuring: Measuring<'u> option) =
         match measuring with
         | Some m -> sprintf format m.Value
         | None -> empty
 
-    let formatTime<[<Measure>]'u> (measuring : Measuring<'u> option) =
+    let formatTime<[<Measure>] 'u> (measuring: Measuring<'u> option) =
         match measuring with
         | Some m -> m.Time.ToString("HH:mm")
         | None -> "--:--"
@@ -20,12 +20,13 @@ module Process =
     let formatTemperature = formatMeasuring "%5.1f" "  ---"
     let formatWind = formatMeasuring "%4.1f" " ---"
     let formatPressure = formatMeasuring "%6.1f" "  ----"
-    let formatRain value = 
-        match value with 
+
+    let formatRain value =
+        match value with
         | Some v -> sprintf "%5.1f" v
         | None -> "  ---"
 
-    let drawDay color offset (summary : DaySummary) image =
+    let drawDay color offset (summary: DaySummary) image =
         image
         |> drawText (formatTemperature summary.TempMin) color (72.0<px>, 216.0<px> + offset)
         |> drawText (formatTime summary.TempMin) Color.Grey (72.0<px>, 228.0<px> + offset)

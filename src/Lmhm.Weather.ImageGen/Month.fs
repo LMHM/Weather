@@ -7,10 +7,9 @@ open Lmhm.Weather.ImageGen.Drawing
 
 module Process =
 
-    let formatDate data =
-        data.Date.ToString("MM-dd")
+    let formatDate data = data.Date.ToString("MM-dd")
 
-    let dateColor (data : DaySummary) =
+    let dateColor (data: DaySummary) =
         match data.TempAvg with
         | None -> Color.White
         | Some x when x > 10.0<degC> -> Color.Red
@@ -41,7 +40,8 @@ module Process =
 
     let drawRow data rowNbr image =
         let y = 1.0<px> * (rowNbr * 13 + 26 |> float)
-        image 
+
+        image
         |> drawText (formatDate data) (dateColor data) (8.0<px>, y)
         |> drawText (formatSmall data.TempMin) Color.LightGreen (58.0<px>, y)
         |> drawText (formatTime data.TempMin) Color.Grey (104.0<px>, y)
@@ -60,10 +60,11 @@ module Process =
         let image = loadImage "20dag_template.png"
         let processRow (image, rowNbr) data = (drawRow data rowNbr image, rowNbr + 1)
         List.fold processRow (image, 0) data |> fst
-    
+
 let run inputPath outputPath =
     let today = DateOnly.FromDateTime(DateTime.Today)
-    today :: [for i in -1..-1..-20 -> today.AddDays i]
+
+    today :: [ for i in -1..-1..-20 -> today.AddDays i ]
     |> readDaySummary inputPath
     |> Process.generateImage
     |> saveImage (outputPath + "20dag.png")
