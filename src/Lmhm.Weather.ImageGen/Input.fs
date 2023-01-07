@@ -75,7 +75,7 @@ type DaySummary =
       Rain: float<mm> option }
 
 type MonthSummary =
-    { Month: DateOnly
+    { Date: DateOnly
       TempMin: Measuring<degC> option
       TempMax: Measuring<degC> option
       WindMax: Measuring<m / s> option
@@ -222,7 +222,7 @@ module private Datafiles =
             let filePath = Path.Combine(path, fileName)
 
             if not (File.Exists filePath) then
-                { Month = date
+                { Date = date
                   TempMin = None
                   TempMax = None
                   WindMax = None
@@ -232,9 +232,9 @@ module private Datafiles =
             else
                 let lines = File.ReadAllLines filePath
 
-                { Month = date
-                  TempMin = Measuring.readMeasuring<degC> lines[4]
-                  TempMax = Measuring.readMeasuring<degC> lines[5]
+                { Date = date
+                  TempMin = Measuring.readMeasuring<degC> lines[3]
+                  TempMax = Measuring.readMeasuring<degC> lines[4]
                   WindMax = Measuring.readMeasuring<m / s> lines[0]
                   PressureMin = Measuring.readMeasuring<hPa> lines[1]
                   PressureMax = Measuring.readMeasuring<hPa> lines[2]

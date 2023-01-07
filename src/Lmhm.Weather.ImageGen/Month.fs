@@ -7,7 +7,7 @@ open Lmhm.Weather.ImageGen.Drawing
 
 module Process =
 
-    let formatDate data = data.Date.ToString("MM-dd")
+    let formatDate (data: DaySummary) = data.Date.ToString("MM-dd")
 
     let dateColor (data: DaySummary) =
         match data.TempAvg with
@@ -38,7 +38,7 @@ module Process =
         | Some x -> sprintf "%3.0f" x
         | None -> "  -"
 
-    let drawRow data rowNbr image =
+    let drawRow (data: DaySummary) rowNbr image =
         let y = 1.0<px> * (rowNbr * 13 + 26 |> float)
 
         image
