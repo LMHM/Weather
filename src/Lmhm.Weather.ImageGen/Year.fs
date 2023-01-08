@@ -4,6 +4,7 @@ open System
 open Lmhm.Weather.ImageGen.Drawing
 open Lmhm.Weather.ImageGen.Input
 open SixLabors.ImageSharp
+open System.IO
 
 module private Process =
 
@@ -92,4 +93,4 @@ let run inputPath outputPath =
     DateOnly.FromDateTime(DateTime.Today)
     |> readYearSummary inputPath
     |> Process.generateImage
-    |> saveImage (outputPath + "summering.png")
+    |> saveImage (Path.Combine(outputPath, "summering.png"))

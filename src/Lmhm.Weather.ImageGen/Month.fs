@@ -4,6 +4,7 @@ open System
 open SixLabors.ImageSharp
 open Lmhm.Weather.ImageGen.Input
 open Lmhm.Weather.ImageGen.Drawing
+open System.IO
 
 module private Process =
 
@@ -67,4 +68,4 @@ let run inputPath outputPath =
     today :: [ for i in -1..-1..-20 -> today.AddDays i ]
     |> readDaySummary inputPath
     |> Process.generateImage
-    |> saveImage (outputPath + "20dag.png")
+    |> saveImage (Path.Combine(outputPath, "20dag.png"))
