@@ -81,7 +81,8 @@ type MonthSummary =
       WindMax: Measuring<m / s> option
       PressureMin: Measuring<hPa> option
       PressureMax: Measuring<hPa> option
-      Precipitation: float<mm> option }
+      Precipitation: float<mm> option
+      AccumulatedPrecipitation: float<mm> }
 
 type YearSummary =
     { Today: DaySummary
@@ -228,7 +229,8 @@ module private Datafiles =
                   WindMax = None
                   PressureMin = None
                   PressureMax = None
-                  Precipitation = readPrecipitation path date }
+                  Precipitation = readPrecipitation path date
+                  AccumulatedPrecipitation = 0.0<mm> }
             else
                 let lines = File.ReadAllLines filePath
 
@@ -238,7 +240,34 @@ module private Datafiles =
                   WindMax = Measuring.readMeasuring<m / s> lines[0]
                   PressureMin = Measuring.readMeasuring<hPa> lines[1]
                   PressureMax = Measuring.readMeasuring<hPa> lines[2]
-                  Precipitation = readPrecipitation path date }
+                  Precipitation = readPrecipitation path date
+                  AccumulatedPrecipitation = 0.0<mm> }
+
+        let SomeOrDefault v d =
+            match v with
+            | Some x -> x
+            | None -> d
+
+        let readMonths path (date: DateOnly) =
+            let readMonth month =
+                if month > date then
+                    None
+                else
+                    Some(readMonthSummary path month, month.AddMonths(1))
+
+            let accumulatePrecipitation acc ms =
+                let pre = SomeOrDefault ms.Precipitation 0.0<mm>
+
+                match ms.Date.Month with
+                | 1 -> ({ ms with AccumulatedPrecipitation = pre }, pre)
+                | _ -> ({ ms with AccumulatedPrecipitation = acc + pre }, acc + pre)
+
+            DateOnly(date.Year - 1, 1, 1)
+            |> List.unfold readMonth
+            |> List.mapFold accumulatePrecipitation 0.0<mm>
+            |> fst
+            |> List.rev
+            |> List.take 13
 
 let readSensorData path (fromDate: DateOnly) (toDate: DateOnly) =
     [ for dayNumber = fromDate.DayNumber to toDate.DayNumber do
@@ -250,4 +279,4 @@ let readDaySummary path =
 let readYearSummary path date =
     { Today = date |> Datafiles.DaySummary.readDay path
       Yesterday = date.AddDays(-1) |> Datafiles.DaySummary.readDay path
-      Months = [ for month in [ -12 .. 0 ] -> date.AddMonths(month) |> Datafiles.MonthSummary.readMonthSummary path ] }
+      Months = Datafiles.MonthSummary.readMonths path date }

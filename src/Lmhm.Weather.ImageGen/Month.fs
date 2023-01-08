@@ -5,7 +5,7 @@ open SixLabors.ImageSharp
 open Lmhm.Weather.ImageGen.Input
 open Lmhm.Weather.ImageGen.Drawing
 
-module Process =
+module private Process =
 
     let formatDate (data: DaySummary) = data.Date.ToString("MM-dd")
 

@@ -5,7 +5,7 @@ open Lmhm.Weather.ImageGen.Drawing
 open Lmhm.Weather.ImageGen.Input
 open SixLabors.ImageSharp
 
-module Process =
+module private Process =
 
     let formatMeasuring<[<Measure>] 'u> format empty (measuring: Measuring<'u> option) =
         match measuring with
@@ -27,6 +27,7 @@ module Process =
     let formatTemperature = formatMeasuring "%5.1f" "  ---"
     let formatWind = formatMeasuring "%4.1f" " ---"
     let formatPressure = formatMeasuring "%6.1f" "  ----"
+    let formatAccRain = sprintf "%4.0f"
 
     let formatRain value =
         match value with
@@ -71,6 +72,7 @@ module Process =
         |> drawText (formatPressure data.PressureMax) color (400.0<px>, y)
         |> drawText (formatDay data.PressureMax) Color.Grey (456.0<px>, y)
         |> drawText (formatRain data.Precipitation) color (480.0<px>, y)
+        |> drawText (formatAccRain data.AccumulatedPrecipitation) color (528.0<px>, y)
 
     let generateImage data =
         let image = loadImage "summary_template.png"
@@ -78,10 +80,13 @@ module Process =
         let processRow (image, rowNbr) data =
             (drawMonth data rowNbr image, rowNbr + 1)
 
-        List.fold processRow (image, 0) (List.sortBy (fun x -> (-x.Date.Year, x.Date.Month)) data.Months)
+        data.Months
+        |> List.sortBy (fun x -> (-x.Date.Year, x.Date.Month))
+        |> List.fold processRow (image, 0)
         |> fst
         |> drawDay Color.Yellow 0.0<px> data.Yesterday
         |> drawDay Color.White 24.0<px> data.Today
+        |> drawText (DateTime.Now.ToString("yyyy-MM-dd HH:mm")) Color.Orange (508.0<px>, 276.0<px>)
 
 let run inputPath outputPath =
     DateOnly.FromDateTime(DateTime.Today)

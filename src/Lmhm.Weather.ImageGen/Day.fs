@@ -312,13 +312,16 @@ module private Process =
     let drawWindSpeedMeter data image =
         let origin = (223.0<px>, 400.0<px>)
 
+        let maxOrDefault l =
+            if List.isEmpty l then 0.0<m / s> else List.max l
+
         let max10min =
             data
             |> List.filter (fun x -> x.Timestamp > DateTime.Now.AddMinutes(-10))
             |> List.choose (fun x -> x.WindSpeedMax)
-            |> List.max
+            |> maxOrDefault
 
-        let max24h = data |> List.choose (fun x -> x.WindSpeedMax) |> List.max
+        let max24h = data |> List.choose (fun x -> x.WindSpeedMax) |> maxOrDefault
         let current = formatValue (fun x -> x.WindSpeed) "%4.1f" " ---" data
 
         let speedToAngle (speed: float<m / s>) =
